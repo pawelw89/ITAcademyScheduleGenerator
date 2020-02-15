@@ -9,8 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class InputParametersReader {
-    private static final String DATE_FORMAT = "d.M.yyyy";
-    private static final String TIME_FORMAT = "HH:mm";
+    private final PropertiesReader propertiesReader = PropertiesReader.getInstance();
     private Options options;
 
     public InputParametersReader(){
@@ -56,19 +55,22 @@ public class InputParametersReader {
         LocalTime beginTime = LocalTime.now();
         if(cmd.hasOption("b")){
             String value = cmd.getOptionValue("b");
-            beginTime = LocalTime.parse(value);
+            String timeFormat = propertiesReader.readProperty("time.format");
+            beginTime = LocalTime.parse(value, DateTimeFormatter.ofPattern(timeFormat));
         }
 
         LocalTime endTime = LocalTime.now();
         if(cmd.hasOption("e")){
             String value = cmd.getOptionValue("e");
-            endTime = LocalTime.parse(value, DateTimeFormatter.ofPattern("d.M.yyyy"));
+            String timeFormat = propertiesReader.readProperty("time.format");
+            endTime = LocalTime.parse(value, DateTimeFormatter.ofPattern(timeFormat));
         }
 
         LocalDate startDate = LocalDate.now();
         if(cmd.hasOption("s")){
             String value = cmd.getOptionValue("s");
-            startDate = LocalDate.parse(value, DateTimeFormatter.ofPattern("d.M.yyyy"));
+            String dateFormat = propertiesReader.readProperty("date.format");
+            startDate = LocalDate.parse(value, DateTimeFormatter.ofPattern(dateFormat));
         }
 
         return new LessonParameters.Builder(beginTime, endTime, numberOfHours, lessonDays, startDate).fileName(fileName).

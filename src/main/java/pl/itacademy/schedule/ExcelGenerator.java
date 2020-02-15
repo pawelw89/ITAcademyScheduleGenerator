@@ -5,77 +5,90 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.util.List;
-
-//TODO: finish this class implementation
-//TODO: use examples from project files
-//TODO: generate all rows for each separate lesson
-//TODO: set proper formats for date and time cells
-//TODO: fill formulas for cells wit formulas
-//TODO: think about how to avoid double row creation for cases, when status part of wokbook will be created
-//TODO: last row with status should be next row after the last lesson, or next row after status section if we have small amount of lessons
+import static java.time.temporal.ChronoUnit.MINUTES;
 
 public class ExcelGenerator {
     public Workbook createExcel(Schedule schedule) {
         XSSFWorkbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet();
         List<Lesson> lessons = schedule.getLessons();
-        CellStyle cellStyle = workbook.createCellStyle();
-        CreationHelper createHelper = workbook.getCreationHelper();
+
+        CellStyle dateStyle = workbook.createCellStyle();
+        dateStyle.setDataFormat(workbook.createDataFormat().getFormat("d/m/yyyy"));
+
+        CellStyle timeStyle = workbook.createCellStyle();
+        timeStyle.setDataFormat(workbook.createDataFormat().getFormat("HH:mm"));
 
         for (int i = 0; i < lessons.size(); i++) {
             Lesson lesson = lessons.get(i);
-            Row row = sheet.createRow(i);
+            Row row = getOrCreateRow(sheet, i);
+
             Cell dateCell = row.createCell(0);
             dateCell.setCellValue(lesson.getDate());
-            cellStyle.setDataFormat(createHelper.createDataFormat().getFormat("d/mm/yyyy"));
-            dateCell.setCellStyle(cellStyle);
+            dateCell.setCellStyle(dateStyle);
+
+            Cell beginTimeCell = row.createCell(3);
+            beginTimeCell.setCellValue(lesson.getDate().atTime(lesson.getBeginTime()));
+            beginTimeCell.setCellStyle(timeStyle);
+
+            Cell endTimeCell = row.createCell(4);
+            endTimeCell.setCellValue(lesson.getDate().atTime(lesson.getEndTime()));
+            endTimeCell.setCellStyle(timeStyle);
+
+            Cell timeLesson = row.createCell(5);
+            int index = i + 1;
+            String formula ="IF(B"+index+"=\"done\",HOUR(E"+index+"-D"+index+") + MINUTE(E"+index+"-D"+index+")/60,\"\")";
+            timeLesson.setCellFormula(formula);
         }
 
-//        for (int i = 0; i < lessons.size(); i++) {
-//            Lesson lesson = lessons.get(i);
-//            Row row = sheet.createRow(i);
-//            Cell beginTimeCell = row.createCell(3);
-//            beginTimeCell.setCellValue(lesson.getBeginTime());
-//        }
-
-//        for (int i = 0; i < lessons.size(); i++) {
-//            Lesson lesson = lessons.get(i);
-//            Row row = sheet.createRow(i);
-//            Cell endTimeCell = row.createCell(4);
-//            endTimeCell.setCellValue(lesson.getEndTime());
-//        }
-
-//        private Row getOrCreateRow(Sheet sheet, int index) {
-//            Row row = sheet.getRow(index);
-//            if(row == null) {
-//                row = sheet.createRow(index);
-//            }
-//            return row;
-//        }
-
-        Row row = sheet.createRow(0);
-        Cell hoursDone = row.createCell(7);
+        Row hoursDoneRow = getOrCreateRow(sheet, 0);
+        Cell hoursDone = hoursDoneRow.createCell(7);
         hoursDone.setCellValue("hours done");
-        Cell hoursDone2 = row.createCell(8);
+        Cell hoursDone2 = hoursDoneRow.createCell(8);
         hoursDone2.setCellFormula("SUM(F1:F57)");
 
-        Row row2 = sheet.createRow(1);
-        Cell hoursPlanned = row2.createCell(7);
+        Row hoursPlannedRow = getOrCreateRow(sheet, 1);
+        Cell hoursPlanned = hoursPlannedRow.createCell(7);
         hoursPlanned.setCellValue("hours planned");
-        Cell hoursPlanned2 = row2.createCell(8);
-        hoursPlanned2.setCellValue(21);
+        Cell hoursPlanned2 = hoursPlannedRow.createCell(8);
+        hoursPlanned2.setCellValue(numberOfPlannedHours(schedule));
 
-        Row row3 = sheet.createRow(3);
-        Cell lessonsDone = row3.createCell(7);
+        Row lessonsDoneRow = getOrCreateRow(sheet, 3);
+        Cell lessonsDone = lessonsDoneRow.createCell(7);
         lessonsDone.setCellValue("lessons done");
-        Cell lessonsDone2 = row3.createCell(8);
-//        lessonsDone2.setCellFormula("COUNTIF(B1:B57,done");
+        Cell lessonsDone2 = lessonsDoneRow.createCell(8);
+        lessonsDone2.setCellFormula("COUNTIF(B1:B57,\"done\")");
 
-        Row row4 = sheet.createRow(4);
-        Cell lessonsPlanned = row4.createCell(7);
+        Row lessonsPlannedRow = getOrCreateRow(sheet, 4);
+        Cell lessonsPlanned = lessonsPlannedRow.createCell(7);
         lessonsPlanned.setCellValue("lessons planned");
-        Cell lessonsPlanned2 = row4.createCell(8);
-        lessonsPlanned2.setCellValue(14);
+        Cell lessonsPlanned2 = lessonsPlannedRow.createCell(8);
+        lessonsPlanned2.setCellValue(lessons.size());
+
+        int index = sheet.getLastRowNum();
+        Row statusRow = getOrCreateRow(sheet,index+1);
+        Cell status = statusRow.createCell(7);
+        status.setCellValue("STATUS");
+        Cell completedOrProgress = statusRow.createCell(8);
+        completedOrProgress.setCellFormula("IF(I1=I2,\"COMPLETED\",\"IN PROGRESS\")");
+
         return workbook;
+    }
+
+    private Row getOrCreateRow(Sheet sheet, int index) {
+        Row row = sheet.getRow(index);
+        if (row == null) {
+            row = sheet.createRow(index);
+        }
+        return row;
+    }
+
+    private double numberOfPlannedHours(Schedule schedule) {
+        List<Lesson> lessons = schedule.getLessons();
+        double hours = 0;
+        for (Lesson lesson : lessons) {
+            hours += (MINUTES.between(lesson.getBeginTime(), lesson.getEndTime()));
+        }
+        return hours / 60.0;
     }
 }
