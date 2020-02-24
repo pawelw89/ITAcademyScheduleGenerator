@@ -1,33 +1,44 @@
 package pl.itacademy.schedule;
 
 import org.apache.poi.ss.usermodel.Workbook;
+import pl.itacademy.schedule.excel.ExcelGenerator;
+import pl.itacademy.schedule.holiday.HolidaysChecker;
+import pl.itacademy.schedule.holiday.HolidaysCheckerFactory;
+import pl.itacademy.schedule.schedule.LessonGenerator;
+import pl.itacademy.schedule.schedule.LessonParameters;
+import pl.itacademy.schedule.schedule.Schedule;
+import pl.itacademy.schedule.util.InputParametersReader;
+import pl.itacademy.schedule.util.PropertiesReader;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.List;
 
 public class Main {
     public static void main(String[] args) throws IOException {
+        InputParametersReader read = new InputParametersReader();
+
+        LessonParameters lessonParameters = null;
+        try {
+            lessonParameters = read.readParameters(args);
+        } catch (org.apache.commons.cli.ParseException e) {
+            read.showHelp();
+            return;
+        }
+
+        HolidaysCheckerFactory holidaysCheckerFactory = new HolidaysCheckerFactory();
         PropertiesReader propertiesReader = PropertiesReader.getInstance();
-        System.out.println(propertiesReader.readProperty("date.format"));
+        HolidaysChecker holidayChecker = holidaysCheckerFactory.createHolidayChecker(propertiesReader.readProperty("holiday.checker.type"));
+        LessonGenerator lessonGenerator = new LessonGenerator(holidayChecker);
+
+        Schedule schedule = lessonGenerator.generateSchedule(lessonParameters);
 
         ExcelGenerator excelGenerator = new ExcelGenerator();
-        LocalTime beginTime = LocalTime.of(17, 0);
-        LocalTime endTime = LocalTime.of(18, 30);
-        Lesson lesson1 = new Lesson(LocalDate.of(2020, 2, 1), beginTime, endTime);
-        Lesson lesson2 = new Lesson(LocalDate.of(2020, 2, 2), beginTime, endTime);
-        Lesson lesson3 = new Lesson(LocalDate.of(2020, 2, 3), beginTime, endTime);
-        Schedule schedule = new Schedule(List.of(lesson1, lesson2, lesson3), true);
-        Workbook workbook = excelGenerator.createExcel(schedule);
 
-        FileOutputStream fos = new FileOutputStream("test.xlsx");
-        workbook.write(fos);
-        workbook.close();
+        Workbook excel = excelGenerator.createExcel(schedule);
+
+        FileOutputStream fos = new FileOutputStream(lessonParameters.getFileName());
+        excel.write(fos);
         fos.close();
-
-        CalendarificHolidaysChecker holidaysChecker = new CalendarificHolidaysChecker();
-        holidaysChecker.getHolidays(2020);
+        excel.close();
     }
 }

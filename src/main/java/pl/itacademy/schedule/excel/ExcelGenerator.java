@@ -1,8 +1,10 @@
-package pl.itacademy.schedule;
+package pl.itacademy.schedule.excel;
 
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import pl.itacademy.schedule.schedule.Lesson;
+import pl.itacademy.schedule.schedule.Schedule;
 
 import java.util.List;
 import static java.time.temporal.ChronoUnit.MINUTES;

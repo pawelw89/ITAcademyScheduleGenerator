@@ -2,11 +2,13 @@ package pl.itacademy.schedule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.*;
 
-import jdk.jfr.StackTrace;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import pl.itacademy.schedule.schedule.Lesson;
+import pl.itacademy.schedule.schedule.LessonGenerator;
+import pl.itacademy.schedule.schedule.LessonParameters;
+import pl.itacademy.schedule.schedule.Schedule;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -15,7 +17,6 @@ import java.util.Set;
 
 import static java.time.DayOfWeek.MONDAY;
 import static java.time.DayOfWeek.WEDNESDAY;
-import static org.junit.jupiter.api.Assertions.*;
 
 class LessonGeneratorTest {
 
